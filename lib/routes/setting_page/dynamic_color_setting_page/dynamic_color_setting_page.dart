@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:meread/provider/theme_provider.dart';
 import 'package:provider/provider.dart';
 
 class DynamicColorSettingPage extends StatelessWidget {
-  const DynamicColorSettingPage({Key? key}) : super(key: key);
+  const DynamicColorSettingPage({super.key, this.needLeading = true});
+  final bool needLeading;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('动态取色'),
+        leading: needLeading ? null : const SizedBox.shrink(),
+        leadingWidth: needLeading ? null : 0,
+        title: Text(AppLocalizations.of(context)!.dynamicColor),
       ),
       body: SafeArea(
         child: ListView(
@@ -19,13 +23,14 @@ class DynamicColorSettingPage extends StatelessWidget {
               onChanged: (bool value) async {
                 context.read<ThemeProvider>().changeDynamicColor(value);
               },
-              title: const Text('壁纸动态取色'),
-              subtitle: const Text('主题颜色根据桌面壁纸自动变化'),
+              title: Text(AppLocalizations.of(context)!.openDynamicColor),
+              subtitle:
+                  Text(AppLocalizations.of(context)!.dynamicColorFromWallpaper),
             ),
             const Divider(),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              child: Text('* 壁纸动态取色需要系统 Android 版本不低于 12\n* 开启前请自行确认设备受支持'),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              child: Text(AppLocalizations.of(context)!.dynamicColorInfo),
             ),
           ],
         ),

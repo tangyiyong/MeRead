@@ -1,9 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:meread/models/feed.dart';
 import 'package:meread/routes/feed_page/edit_feed_page.dart';
-import 'package:meread/utils/parse.dart';
+import 'package:meread/utils/notification_util.dart';
+import 'package:meread/utils/parse_feed_util.dart';
 
 class AddFeedPage extends StatefulWidget {
   const AddFeedPage({super.key});
@@ -14,8 +18,15 @@ class AddFeedPage extends StatefulWidget {
 
 class _AddFeedPageState extends State<AddFeedPage> {
   final TextEditingController _urlController = TextEditingController();
+  // 右侧 Feed 编辑页面
+  Widget? rightWidget;
+  // 左侧 Feed 添加页面宽度
+  double leftWidth = 400;
+  // 右侧 Feed 编辑页面宽度
+  double rightWidth = 400;
 
-  Widget _feedWidget = const SizedBox(); // 展示解析得到的 Feed 详情
+  // 展示解析得到的 Feed 详情
+  Widget _feedWidget = const SizedBox();
 
   @override
   void initState() {
@@ -25,9 +36,83 @@ class _AddFeedPageState extends State<AddFeedPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (Platform.isAndroid) {
+      return buildScaffold();
+    } else {
+      return Scaffold(
+        body: Row(
+          children: [
+            SizedBox(
+              width: leftWidth,
+              child: buildScaffold(),
+            ),
+            GestureDetector(
+              onPanUpdate: (details) {
+                setState(() {
+                  leftWidth += details.delta.dx;
+                  if (leftWidth < 200) {
+                    leftWidth = 200;
+                  } else if (leftWidth > 800) {
+                    leftWidth = 800;
+                  }
+                });
+              },
+              child: MouseRegion(
+                cursor: SystemMouseCursors.resizeLeftRight,
+                child: SizedBox(
+                  width: 8,
+                  child: Center(
+                    child: VerticalDivider(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                      width: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            buildRightWidget(),
+            if (rightWidget != null)
+              GestureDetector(
+                onPanUpdate: (details) {
+                  setState(() {
+                    rightWidth += details.delta.dx;
+                    if (rightWidth < 200) {
+                      rightWidth = 200;
+                    } else if (rightWidth > 800) {
+                      rightWidth = 800;
+                    }
+                  });
+                },
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.resizeLeftRight,
+                  child: SizedBox(
+                    width: 8,
+                    child: Center(
+                      child: VerticalDivider(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                        width: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Widget buildRightWidget() {
+    return SizedBox(
+      width: rightWidth,
+      child: rightWidget ?? const SizedBox.shrink(),
+    );
+  }
+
+  Widget buildScaffold() {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('添加订阅'),
+        title: Text(AppLocalizations.of(context)!.addFeed),
       ),
       body: SafeArea(
         child: ListView(
@@ -36,10 +121,10 @@ class _AddFeedPageState extends State<AddFeedPage> {
             TextField(
               autofocus: true,
               controller: _urlController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: '输入订阅源地址',
-                labelText: '订阅源地址',
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                hintText: AppLocalizations.of(context)!.enterFeedUrl,
+                labelText: AppLocalizations.of(context)!.feedUrl,
               ),
             ),
             const SizedBox(height: 12),
@@ -48,7 +133,7 @@ class _AddFeedPageState extends State<AddFeedPage> {
               children: [
                 TextButton(
                   onPressed: () {
-                    // 从剪贴板获取订阅源地址，光标移到末尾
+                    /* 从剪贴板获取订阅源地址，光标移到末尾 */
                     Clipboard.getData('text/plain').then(
                       (value) {
                         if (value != null) {
@@ -60,21 +145,19 @@ class _AddFeedPageState extends State<AddFeedPage> {
                       },
                     );
                   },
-                  child: const Text('粘贴'),
+                  child: Text(AppLocalizations.of(context)!.paste),
                 ),
                 const SizedBox(width: 24),
                 TextButton(
                   onPressed: () async {
-                    FocusScope.of(context).requestFocus(FocusNode()); // 收起键盘
+                    // 收起键盘
+                    FocusScope.of(context).requestFocus(FocusNode());
+                    /* 解析订阅源地址 */
                     if (await Feed.isExist(_urlController.text)) {
                       if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('订阅源已存在'),
-                          behavior: SnackBarBehavior.floating,
-                          duration: const Duration(seconds: 2),
-                          action: SnackBarAction(label: '确定', onPressed: () {}),
-                        ),
+                      showToastOrSnackBar(
+                        context,
+                        AppLocalizations.of(context)!.feedAlreadyExists,
                       );
                     } else {
                       Feed? feed = await parseFeed(_urlController.text);
@@ -97,34 +180,39 @@ class _AddFeedPageState extends State<AddFeedPage> {
                               ),
                               onTap: () {
                                 // 打开编辑页面
-                                Navigator.push(
-                                  context,
-                                  CupertinoPageRoute(
-                                    builder: (context) =>
-                                        EditFeedPage(feed: feed),
-                                  ),
-                                ).then(
-                                  (value) => Navigator.pop(context),
-                                );
+                                if (Platform.isAndroid) {
+                                  Navigator.push(
+                                    context,
+                                    CupertinoPageRoute(
+                                      builder: (context) =>
+                                          EditFeedPage(feed: feed),
+                                    ),
+                                  ).then(
+                                    (value) => Navigator.pop(context),
+                                  );
+                                } else {
+                                  setState(() {
+                                    rightWidget = EditFeedPage(
+                                      feed: feed,
+                                      needLeading: false,
+                                      fromAddPage: true,
+                                    );
+                                  });
+                                }
                               },
                             ),
                           );
                         });
                       } else {
                         if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('无法解析订阅源'),
-                            behavior: SnackBarBehavior.floating,
-                            duration: const Duration(seconds: 2),
-                            action:
-                                SnackBarAction(label: '确定', onPressed: () {}),
-                          ),
+                        showToastOrSnackBar(
+                          context,
+                          AppLocalizations.of(context)!.unableToParseFeed,
                         );
                       }
                     }
                   },
-                  child: const Text('解析'),
+                  child: Text(AppLocalizations.of(context)!.parse),
                 ),
               ],
             ),

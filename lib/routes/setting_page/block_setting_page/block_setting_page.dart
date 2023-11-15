@@ -1,23 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:meread/global/global.dart';
 
 class BlockSettingPage extends StatefulWidget {
-  const BlockSettingPage({Key? key}) : super(key: key);
+  const BlockSettingPage({super.key, this.needLeading = true});
+  final bool needLeading;
 
   @override
   State<BlockSettingPage> createState() => _BlockSettingPageState();
 }
 
 class _BlockSettingPageState extends State<BlockSettingPage> {
+  // 屏蔽词列表
   final List<String> _blockList = prefs.getStringList('blockList') ?? [];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('屏蔽规则'),
+        leading: widget.needLeading ? null : const SizedBox.shrink(),
+        leadingWidth: widget.needLeading ? null : 0,
+        title: Text(AppLocalizations.of(context)!.blockRules),
         actions: [
-          // 添加字体
+          // 添加屏蔽词
           IconButton(
             onPressed: () async {
               final TextEditingController controller = TextEditingController();
@@ -25,11 +30,14 @@ class _BlockSettingPageState extends State<BlockSettingPage> {
                 context: context,
                 builder: (BuildContext context) {
                   return AlertDialog(
-                    title: const Text('添加屏蔽规则'),
+                    icon: const Icon(Icons.block_outlined),
+                    title: Text(AppLocalizations.of(context)!.addBlockRule),
                     content: TextField(
                       controller: controller,
-                      decoration: const InputDecoration(
-                        hintText: '输入需要屏蔽的字词',
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText:
+                            AppLocalizations.of(context)!.enterBlockedWord,
                       ),
                     ),
                     actions: [
@@ -37,7 +45,7 @@ class _BlockSettingPageState extends State<BlockSettingPage> {
                         onPressed: () {
                           Navigator.pop(context);
                         },
-                        child: const Text('取消'),
+                        child: Text(AppLocalizations.of(context)!.cancel),
                       ),
                       TextButton(
                         onPressed: () {
@@ -50,7 +58,7 @@ class _BlockSettingPageState extends State<BlockSettingPage> {
                           }
                           Navigator.pop(context);
                         },
-                        child: const Text('确定'),
+                        child: Text(AppLocalizations.of(context)!.ok),
                       ),
                     ],
                   );
@@ -69,15 +77,17 @@ class _BlockSettingPageState extends State<BlockSettingPage> {
               return const Divider();
             }
             if (index == _blockList.length + 1) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                child: Text('* 点击右上角添加需要屏蔽的字词\n* 标题含有屏蔽字词的文章将被隐藏'),
+              return Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                child: Text(AppLocalizations.of(context)!.blockInfo),
               );
             }
             return ListTile(
               title: Text(_blockList[index]),
               trailing: IconButton(
                 onPressed: () {
+                  /* 删除屏蔽词 */
                   setState(() {
                     _blockList.removeAt(index);
                   });

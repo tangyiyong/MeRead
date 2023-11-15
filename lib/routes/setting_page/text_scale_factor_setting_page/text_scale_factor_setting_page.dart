@@ -1,23 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:meread/provider/theme_provider.dart';
 import 'package:provider/provider.dart';
 
-class TextScaleFactorSettingPage extends StatelessWidget {
-  TextScaleFactorSettingPage({Key? key}) : super(key: key);
+class TextScaleFactorSettingPage extends StatefulWidget {
+  const TextScaleFactorSettingPage({super.key, this.needLeading = true});
+  final bool needLeading;
+  @override
+  State<TextScaleFactorSettingPage> createState() =>
+      _TextScaleFactorSettingPageState();
+}
 
-  final Map<double, String> textScaleFactorMap = {
-    0.8: '最小',
-    0.9: '较小',
-    1.0: '适中',
-    1.1: '较大',
-    1.2: '最大',
-  };
-
+class _TextScaleFactorSettingPageState
+    extends State<TextScaleFactorSettingPage> {
   @override
   Widget build(BuildContext context) {
+    double textScaleFactor = context.read<ThemeProvider>().textScaleFactor;
+    final Map<double, String> textScaleFactorMap = {
+      0.8: AppLocalizations.of(context)!.minimum,
+      0.9: AppLocalizations.of(context)!.small,
+      1.0: AppLocalizations.of(context)!.medium,
+      1.1: AppLocalizations.of(context)!.large,
+      1.2: AppLocalizations.of(context)!.maximum,
+    };
     return Scaffold(
       appBar: AppBar(
-        title: const Text('全局缩放'),
+        leading: widget.needLeading ? null : const SizedBox.shrink(),
+        leadingWidth: widget.needLeading ? null : 0,
+        title: Text(AppLocalizations.of(context)!.globalScale),
       ),
       body: SafeArea(
         child: ListView.builder(
@@ -25,11 +35,16 @@ class TextScaleFactorSettingPage extends StatelessWidget {
           itemBuilder: (context, index) {
             return RadioListTile(
               value: textScaleFactorMap.keys.toList()[index],
-              groupValue: context.watch<ThemeProvider>().textScaleFactor,
+              groupValue: textScaleFactor,
               title: Text(textScaleFactorMap.values.toList()[index]),
-              onChanged: (value) {
+              onChanged: (double? value) async {
                 if (value != null) {
-                  context.read<ThemeProvider>().changeTextScaleFactor(value);
+                  await context
+                      .read<ThemeProvider>()
+                      .changeTextScaleFactor(value);
+                  setState(() {
+                    textScaleFactor = value;
+                  });
                 }
               },
             );

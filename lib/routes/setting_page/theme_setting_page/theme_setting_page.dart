@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:meread/provider/theme_provider.dart';
 import 'package:provider/provider.dart';
 
-class ThemeSettingPage extends StatefulWidget {
-  const ThemeSettingPage({super.key});
+class ThemeSettingPage extends StatelessWidget {
+  const ThemeSettingPage({super.key, this.needLeading = true});
 
-  @override
-  State<ThemeSettingPage> createState() => _ThemeSettingPageState();
-}
-
-class _ThemeSettingPageState extends State<ThemeSettingPage> {
-  List<String> themeMode = ['浅色模式', '深色模式', '跟随系统'];
+  final bool needLeading;
 
   @override
   Widget build(BuildContext context) {
+    List<String> themeMode = [
+      AppLocalizations.of(context)!.lightMode,
+      AppLocalizations.of(context)!.darkMode,
+      AppLocalizations.of(context)!.followSystem,
+    ];
     return Scaffold(
       appBar: AppBar(
-        title: const Text('主题颜色'),
+        leading: needLeading ? null : const SizedBox.shrink(),
+        leadingWidth: needLeading ? null : 0,
+        title: Text(AppLocalizations.of(context)!.themeMode),
       ),
       body: SafeArea(
         child: ListView.builder(

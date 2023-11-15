@@ -1,9 +1,7 @@
-import 'package:meread/utils/font_manager.dart';
+import 'package:isar/isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// 全局变量
 late SharedPreferences prefs;
-
-Future<void> init() async {
-  prefs = await SharedPreferences.getInstance();
-  await readThemeFont(); // 读取主题字体
-}
+late Isar isar;
+String applicationVersion = 'v0.6.1';

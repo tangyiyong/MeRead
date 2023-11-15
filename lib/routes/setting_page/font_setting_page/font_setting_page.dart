@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:meread/provider/theme_provider.dart';
-import 'package:meread/utils/font_manager.dart';
+import 'package:meread/utils/font_util.dart';
 import 'package:provider/provider.dart';
 
 class FontSettingPage extends StatefulWidget {
-  const FontSettingPage({Key? key}) : super(key: key);
+  const FontSettingPage({super.key, this.needLeading = true});
+  final bool needLeading;
 
   @override
   State<FontSettingPage> createState() => _FontSettingPageState();
@@ -30,9 +32,11 @@ class _FontSettingPageState extends State<FontSettingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('全局字体'),
+        leading: widget.needLeading ? null : const SizedBox.shrink(),
+        leadingWidth: widget.needLeading ? null : 0,
+        title: Text(AppLocalizations.of(context)!.globalFont),
         actions: [
-          // 添加字体
+          /* 添加字体 */
           IconButton(
             onPressed: () async {
               // 从本地文件导入字体
@@ -52,9 +56,9 @@ class _FontSettingPageState extends State<FontSettingPage> {
               return RadioListTile(
                 value: '默认字体',
                 groupValue: context.watch<ThemeProvider>().themeFont,
-                title: const Text(
-                  '默认字体',
-                  style: TextStyle(fontFamily: '默认字体'),
+                title: Text(
+                  AppLocalizations.of(context)!.defaultFont,
+                  style: const TextStyle(fontFamily: '默认字体'),
                 ),
                 onChanged: (value) {
                   if (value != null) {
@@ -64,15 +68,20 @@ class _FontSettingPageState extends State<FontSettingPage> {
               );
             }
             if (index == _fontNameList.length + 1) {
-              return const Column(
+              return Column(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Divider(),
+                  const Divider(),
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    child: Text('* 点击右上角导入字体\n* 仅支持 otf/ttf/ttc 格式的字体文件'),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    child: Text(
+                      AppLocalizations.of(context)!.fontInfo,
+                    ),
                   ),
                 ],
               );
@@ -90,41 +99,14 @@ class _FontSettingPageState extends State<FontSettingPage> {
                 }
               },
               secondary: IconButton(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('删除确认'),
-                      content: Text(
-                        '确认删除字体：${_fontNameList[index - 1]}',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('取消'),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            if (context.read<ThemeProvider>().themeFont ==
-                                _fontNameList[index - 1]) {
-                              context
-                                  .read<ThemeProvider>()
-                                  .changeThemeFont('思源黑体');
-                            }
-                            // 删除字体
-                            await deleteFont(_fontNameList[index - 1]);
-                            // 重新初始化字体名称列表
-                            await initData();
-                            if (!mounted) return;
-                            Navigator.pop(context);
-                          },
-                          child: const Text('确定'),
-                        ),
-                      ],
-                    ),
-                  );
+                onPressed: () async {
+                  /* 删除字体 */
+                  if (context.read<ThemeProvider>().themeFont ==
+                      _fontNameList[index - 1]) {
+                    context.read<ThemeProvider>().changeThemeFont('默认字体');
+                  }
+                  await deleteFont(_fontNameList[index - 1]);
+                  await initData();
                 },
                 icon: Icon(
                   Icons.delete_outline,
