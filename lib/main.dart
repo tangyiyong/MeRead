@@ -1,27 +1,16 @@
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
-import 'package:meread/global/init.dart';
-import 'package:meread/provider/read_page_provider.dart';
-import 'package:meread/provider/theme_provider.dart';
-import 'package:meread/routes/home_page.dart';
-import 'package:meread/theme/theme.dart';
-import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:get/get.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:meread/common/init_app.dart';
+import 'package:meread/helpers/prefs_helper.dart';
+import 'package:meread/helpers/routes_helper.dart';
+import 'package:meread/helpers/theme_helper.dart';
+import 'package:meread/translation/translation.dart';
 
 Future<void> main() async {
-  await init();
-  runApp(
-    MultiProvider(
-      providers: [
-        // 主题状态管理
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        // 阅读页面配置状态管理
-        ChangeNotifierProvider(create: (_) => ReadPageProvider()),
-      ],
-      child: const MyApp(),
-    ),
-  );
+  await initApp();
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -31,40 +20,41 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return DynamicColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
-        return MaterialApp(
+        return GetMaterialApp(
           debugShowCheckedModeBanner: false,
-          title: 'MeRead',
-          locale: context.watch<ThemeProvider>().language == 'local'
-              ? null
-              : Locale(context.watch<ThemeProvider>().language),
+          title: 'MeRead'.tr,
           localizationsDelegates: const [
-            AppLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: const [
-            Locale('en'),
-            Locale('zh'),
+            Locale('en', 'US'),
+            Locale('zh', 'CN'),
           ],
-          theme: lightTheme(
-            context,
-            lightDynamic,
-          ),
-          darkTheme: darkTheme(
-            context,
-            darkDynamic,
-          ),
+          locale: PrefsHelper.language == 'system'
+              ? Get.deviceLocale
+              : Locale(PrefsHelper.language.split('_').first,
+                  PrefsHelper.language.split('_').last),
+          fallbackLocale: const Locale('en', 'US'),
+          translations: AppTranslation(),
+          theme: ThemeHelp.buildLightTheme(lightDynamic),
+          darkTheme: ThemeHelp.buildDarkTheme(darkDynamic),
           themeMode: [
+            ThemeMode.system,
             ThemeMode.light,
             ThemeMode.dark,
-            ThemeMode.system,
-          ][context.watch<ThemeProvider>().themeIndex],
-          home: const HomePage(),
+          ][PrefsHelper.themeMode],
+          initialRoute: RouteHelp.initRoute,
+          getPages: RouteHelp.routes,
+          defaultTransition: {
+            'cupertino': Transition.cupertino,
+            'fade': Transition.fade,
+          }[PrefsHelper.transition],
           builder: (context, child) {
             return MediaQuery(
               data: MediaQuery.of(context).copyWith(
-                textScaleFactor: context.watch<ThemeProvider>().textScaleFactor,
+                textScaler: TextScaler.linear(PrefsHelper.textScaleFactor),
               ),
               child: child!,
             );
